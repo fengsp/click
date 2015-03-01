@@ -494,21 +494,6 @@ class Context(object):
 
 class BaseCommand(object):
     """The base command implements the minimal API contract of commands.
-    Most code will never use this as it does not implement a lot of useful
-    functionality but it can act as the direct subclass of alternative
-    parsing methods that do not depend on the Click parser.
-
-    For instance, this can be used to bridge Click and other systems like
-    argparse or docopt.
-
-    Because base commands do not implement a lot of the API that other
-    parts of Click take for granted, they are not supported for all
-    operations.  For instance, they cannot be used with the decorators
-    usually and they have no built-in callback system.
-
-    .. versionchanged:: 2.0
-       Added the `context_settings` parameter.
-
     :param name: the name of the command to use unless a group overrides it.
     :param context_settings: an optional dictionary with defaults that are
                              passed to the context object.
