@@ -493,34 +493,12 @@ class Context(object):
 
 
 class BaseCommand(object):
-    """The base command implements the minimal API contract of commands.
-    :param name: the name of the command to use unless a group overrides it.
-    :param context_settings: an optional dictionary with defaults that are
-                             passed to the context object.
-    """
     #: the default for the :attr:`Context.allow_extra_args` flag.
     allow_extra_args = False
     #: the default for the :attr:`Context.allow_interspersed_args` flag.
     allow_interspersed_args = True
     #: the default for the :attr:`Context.ignore_unknown_options` flag.
     ignore_unknown_options = False
-
-    def __init__(self, name, context_settings=None):
-        #: the name the command thinks it has.  Upon registering a command
-        #: on a :class:`Group` the group will default the command name
-        #: with this information.  You should instead use the
-        #: :class:`Context`\'s :attr:`~Context.info_name` attribute.
-        self.name = name
-        if context_settings is None:
-            context_settings = {}
-        #: an optional dictionary with defaults passed to the context.
-        self.context_settings = context_settings
-
-    def get_usage(self, ctx):
-        raise NotImplementedError('Base commands cannot get usage')
-
-    def get_help(self, ctx):
-        raise NotImplementedError('Base commands cannot get help')
 
     def make_context(self, info_name, args, parent=None, **extra):
         """This function when given an info name and arguments will kick
@@ -649,46 +627,6 @@ class BaseCommand(object):
 
 
 class Command(BaseCommand):
-    """Commands are the basic building block of command line interfaces in
-    Click.  A basic command handles command line parsing and might dispatch
-    more parsing to commands nested below it.
-
-    .. versionchanged:: 2.0
-       Added the `context_settings` parameter.
-
-    :param name: the name of the command to use unless a group overrides it.
-    :param context_settings: an optional dictionary with defaults that are
-                             passed to the context object.
-    :param callback: the callback to invoke.  This is optional.
-    :param params: the parameters to register with this command.  This can
-                   be either :class:`Option` or :class:`Argument` objects.
-    :param help: the help string to use for this command.
-    :param epilog: like the help string but it's printed at the end of the
-                   help page after everything else.
-    :param short_help: the short help to use for this command.  This is
-                       shown on the command listing of the parent command.
-    :param add_help_option: by default each command registers a ``--help``
-                            option.  This can be disabled by this parameter.
-    """
-
-    def __init__(self, name, context_settings=None, callback=None,
-                 params=None, help=None, epilog=None, short_help=None,
-                 options_metavar='[OPTIONS]', add_help_option=True):
-        BaseCommand.__init__(self, name, context_settings)
-        #: the callback to execute when the command fires.  This might be
-        #: `None` in which case nothing happens.
-        self.callback = callback
-        #: the list of parameters for this command in the order they
-        #: should show up in the help page and execute.  Eager parameters
-        #: will automatically be handled before non eager ones.
-        self.params = params or []
-        self.help = help
-        self.epilog = epilog
-        self.options_metavar = options_metavar
-        if short_help is None and help:
-            short_help = make_default_short_help(help)
-        self.short_help = short_help
-        self.add_help_option = add_help_option
 
     def get_usage(self, ctx):
         formatter = ctx.make_formatter()
