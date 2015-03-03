@@ -661,13 +661,6 @@ class Command(BaseCommand):
         ctx.args = args
         return args
 
-    def invoke(self, ctx):
-        """Given a context, this invokes the attached callback (if it exists)
-        in the right way.
-        """
-        if self.callback is not None:
-            return ctx.invoke(self.callback, **ctx.params)
-
 
 class MultiCommand(Command):
     """A multi command is the basic implementation of a command that
