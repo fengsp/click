@@ -402,77 +402,6 @@ class Context(object):
         """Exits the application with a given exit code."""
         sys.exit(code)
 
-    def get_usage(self):
-        """Helper method to get formatted usage string for the current
-        context and command.
-        """
-        return self.command.get_usage(self)
-
-    def get_help(self):
-        """Helper method to get formatted help page for the current
-        context and command.
-        """
-        return self.command.get_help(self)
-
-    def invoke(*args, **kwargs):
-        """Invokes a command callback in exactly the way it expects.  There
-        are two ways to invoke this method:
-
-        1.  the first argument can be a callback and all other arguments and
-            keyword arguments are forwarded directly to the function.
-        2.  the first argument is a click command object.  In that case all
-            arguments are forwarded as well but proper click parameters
-            (options and click arguments) must be keyword arguments and Click
-            will fill in defaults.
-
-        Note that before Click 3.2 keyword arguments were not properly filled
-        in against the intention of this code and no context was created.  For
-        more information about this change and why it was done in a bugfix
-        release see :ref:`upgrade-to-3.2`.
-        """
-        self, callback = args[:2]
-        ctx = self
-
-        # This is just to improve the error message in cases where old
-        # code incorrectly invoked this method.  This will eventually be
-        # removed.
-        injected_arguments = False
-
-        # It's also possible to invoke another command which might or
-        # might not have a callback.  In that case we also fill
-        # in defaults and make a new context for this command.
-        if isinstance(callback, Command):
-            other_cmd = callback
-            callback = other_cmd.callback
-            ctx = Context(other_cmd, info_name=other_cmd.name, parent=self)
-            if callback is None:
-                raise TypeError('The given command does not have a '
-                                'callback that can be invoked.')
-
-            for param in other_cmd.params:
-                if param.name not in kwargs and param.expose_value:
-                    kwargs[param.name] = param.get_default(ctx)
-                    injected_arguments = True
-
-        args = args[2:]
-        if getattr(callback, '__click_pass_context__', False):
-            args = (ctx,) + args
-        with augment_usage_errors(self):
-            try:
-                with ctx:
-                    return callback(*args, **kwargs)
-            except TypeError as e:
-                if not injected_arguments:
-                    raise
-                if 'got multiple values for' in str(e):
-                    raise RuntimeError(
-                        'You called .invoke() on the context with a command '
-                        'but provided parameters as positional arguments.  '
-                        'This is not supported but sometimes worked by chance '
-                        'in older versions of Click.  To fix this see '
-                        'http://click.pocoo.org/upgrading/#upgrading-to-3.2')
-                raise
-
     def forward(*args, **kwargs):
         """Similar to :meth:`invoke` but fills in default keyword
         arguments from the current context if the other command expects
@@ -513,27 +442,6 @@ class BaseCommand(object):
         # completion is actually enabled, otherwise this is quite a fast
         # noop.
         _bashcomplete(self, prog_name, complete_var)
-
-        try:
-            try:
-                with self.make_context(prog_name, args, **extra) as ctx:
-                    rv = self.invoke(ctx)
-                    if not standalone_mode:
-                        return rv
-                    ctx.exit()
-            except (EOFError, KeyboardInterrupt):
-                echo(file=sys.stderr)
-                raise Abort()
-            except ClickException as e:
-                if not standalone_mode:
-                    raise
-                e.show()
-                sys.exit(e.exit_code)
-        except Abort:
-            if not standalone_mode:
-                raise
-            echo('Aborted!', file=sys.stderr)
-            sys.exit(1)
 
 
 class Command(BaseCommand):
@@ -586,15 +494,6 @@ class Command(BaseCommand):
                       is_eager=True, expose_value=False,
                       callback=show_help,
                       help='Show this message and exit.')
-
-    def make_parser(self, ctx):
-        """Creates the underlying option parser for this command."""
-        parser = OptionParser(ctx)
-        parser.allow_interspersed_args = ctx.allow_interspersed_args
-        parser.ignore_unknown_options = ctx.ignore_unknown_options
-        for param in self.get_params(ctx):
-            param.add_to_parser(parser, ctx)
-        return parser
 
     def get_help(self, ctx):
         """Formats the help into a string and returns it.  This creates a
@@ -963,62 +862,7 @@ class CommandCollection(MultiCommand):
 
 
 class Parameter(object):
-    """A parameter to a command comes in two versions: they are either
-    :class:`Option`\s or :class:`Argument`\s.  Other subclasses are currently
-    not supported by design as some of the internals for parsing are
-    intentionally not finalized.
-
-    Some settings are supported by both options and arguments.
-
-    .. versionchanged:: 2.0
-       Changed signature for parameter callback to also be passed the
-       parameter.  In Click 2.0, the old callback format will still work,
-       but it will raise a warning to give you change to migrate the
-       code easier.
-
-    :param param_decls: the parameter declarations for this option or
-                        argument.  This is a list of flags or argument
-                        names.
-    :param type: the type that should be used.  Either a :class:`ParamType`
-                 or a Python type.  The later is converted into the former
-                 automatically if supported.
-    :param required: controls if this is optional or not.
-    :param default: the default value if omitted.  This can also be a callable,
-                    in which case it's invoked when the default is needed
-                    without any arguments.
-    :param callback: a callback that should be executed after the parameter
-                     was matched.  This is called as ``fn(ctx, param,
-                     value)`` and needs to return the value.  Before Click
-                     2.0, the signature was ``(ctx, value)``.
-    :param nargs: the number of arguments to match.  If not ``1`` the return
-                  value is a tuple instead of single value.
-    :param metavar: how the value is represented in the help page.
-    :param expose_value: if this is `True` then the value is passed onwards
-                         to the command callback and stored on the context,
-                         otherwise it's skipped.
-    :param is_eager: eager values are processed before non eager ones.  This
-                     should not be set for arguments or it will inverse the
-                     order of processing.
-    :param envvar: a string or list of strings that are environment variables
-                   that should be checked.
-    """
     param_type_name = 'parameter'
-
-    def __init__(self, param_decls=None, type=None, required=False,
-                 default=None, callback=None, nargs=1, metavar=None,
-                 expose_value=True, is_eager=False, envvar=None):
-        self.name, self.opts, self.secondary_opts = \
-            self._parse_decls(param_decls or (), expose_value)
-        self.type = convert_type(type, default)
-        self.required = required
-        self.callback = callback
-        self.nargs = nargs
-        self.multiple = False
-        self.expose_value = expose_value
-        self.default = default
-        self.is_eager = is_eager
-        self.metavar = metavar
-        self.envvar = envvar
 
     def make_metavar(self):
         if self.metavar is not None:
@@ -1246,47 +1090,6 @@ class Option(Parameter):
                 elif self.is_flag:
                     raise TypeError('Options cannot be count and flags at '
                                     'the same time.')
-
-    def _parse_decls(self, decls, expose_value):
-        opts = []
-        secondary_opts = []
-        name = None
-        possible_names = []
-
-        for decl in decls:
-            if isidentifier(decl):
-                if name is not None:
-                    raise TypeError('Name defined twice')
-                name = decl
-            else:
-                split_char = decl[:1] == '/' and ';' or '/'
-                if split_char in decl:
-                    first, second = decl.split(split_char, 1)
-                    first = first.rstrip()
-                    possible_names.append(split_opt(first))
-                    opts.append(first)
-                    secondary_opts.append(second.lstrip())
-                else:
-                    possible_names.append(split_opt(decl))
-                    opts.append(decl)
-
-        if name is None and possible_names:
-            possible_names.sort(key=lambda x: len(x[0]))
-            name = possible_names[-1][1].replace('-', '_').lower()
-            if not isidentifier(name):
-                name = None
-
-        if name is None:
-            if not expose_value:
-                return None, opts, secondary_opts
-            raise TypeError('Could not determine name for option')
-
-        if not opts and not secondary_opts:
-            raise TypeError('No options defined but a name was passed (%s). '
-                            'Did you mean to declare an argument instead '
-                            'of an option?' % name)
-
-        return name, opts, secondary_opts
 
     def add_to_parser(self, parser, ctx):
         kwargs = {
