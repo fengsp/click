@@ -883,9 +883,6 @@ class Parameter(object):
             rv = self.default
         return self.type_cast_value(ctx, rv)
 
-    def add_to_parser(self, parser, ctx):
-        pass
-
     def consume_value(self, ctx, opts):
         value = opts.get(self.name)
         if value is None:
@@ -990,106 +987,6 @@ class Parameter(object):
 
 
 class Option(Parameter):
-    """Options are usually optional values on the command line and
-    have some extra features that arguments don't have.
-
-    All other parameters are passed onwards to the parameter constructor.
-
-    :param show_default: controls if the default value should be shown on the
-                         help page.  Normally, defaults are not shown.
-    :param prompt: if set to `True` or a non empty string then the user will
-                   be prompted for input if not set.  If set to `True` the
-                   prompt will be the option name capitalized.
-    :param confirmation_prompt: if set then the value will need to be confirmed
-                                if it was prompted for.
-    :param hide_input: if this is `True` then the input on the prompt will be
-                       hidden from the user.  This is useful for password
-                       input.
-    :param is_flag: forces this option to act as a flag.  The default is
-                    auto detection.
-    :param flag_value: which value should be used for this flag if it's
-                       enabled.  This is set to a boolean automatically if
-                       the option string contains a slash to mark two options.
-    :param multiple: if this is set to `True` then the argument is accepted
-                     multiple times and recorded.  This is similar to ``nargs``
-                     in how it works but supports arbitrary number of
-                     arguments.
-    :param count: this flag makes an option increment an integer.
-    :param allow_from_autoenv: if this is enabled then the value of this
-                               parameter will be pulled from an environment
-                               variable in case a prefix is defined on the
-                               context.
-    :param help: the help string.
-    """
-    param_type_name = 'option'
-
-    def __init__(self, param_decls=None, show_default=False,
-                 prompt=False, confirmation_prompt=False,
-                 hide_input=False, is_flag=None, flag_value=None,
-                 multiple=False, count=False, allow_from_autoenv=True,
-                 type=None, help=None, **attrs):
-        default_is_missing = attrs.get('default', _missing) is _missing
-        Parameter.__init__(self, param_decls, type=type, **attrs)
-
-        if prompt is True:
-            prompt_text = self.name.replace('_', ' ').capitalize()
-        elif prompt is False:
-            prompt_text = None
-        else:
-            prompt_text = prompt
-        self.prompt = prompt_text
-        self.confirmation_prompt = confirmation_prompt
-        self.hide_input = hide_input
-
-        # Flags
-        if is_flag is None:
-            if flag_value is not None:
-                is_flag = True
-            else:
-                is_flag = bool(self.secondary_opts)
-        if is_flag and default_is_missing:
-            self.default = False
-        if flag_value is None:
-            flag_value = not self.default
-        self.is_flag = is_flag
-        self.flag_value = flag_value
-        if self.is_flag and isinstance(self.flag_value, bool) \
-           and type is None:
-            self.type = BOOL
-            self.is_bool_flag = True
-        else:
-            self.is_bool_flag = False
-
-        # Counting
-        self.count = count
-        if count:
-            if type is None:
-                self.type = IntRange(min=0)
-            if default_is_missing:
-                self.default = 0
-
-        self.multiple = multiple
-        self.allow_from_autoenv = allow_from_autoenv
-        self.help = help
-        self.show_default = show_default
-
-        # Sanity check for stuff we don't support
-        if __debug__:
-            if self.prompt and self.is_flag and not self.is_bool_flag:
-                raise TypeError('Cannot prompt for flags that are not bools.')
-            if not self.is_bool_flag and self.secondary_opts:
-                raise TypeError('Got secondary option for non boolean flag.')
-            if self.is_bool_flag and self.hide_input \
-               and self.prompt is not None:
-                raise TypeError('Hidden input does not work with boolean '
-                                'flag prompts.')
-            if self.count:
-                if self.multiple:
-                    raise TypeError('Options cannot be multiple and count '
-                                    'at the same time.')
-                elif self.is_flag:
-                    raise TypeError('Options cannot be count and flags at '
-                                    'the same time.')
 
     def add_to_parser(self, parser, ctx):
         kwargs = {
