@@ -89,27 +89,6 @@ def iter_params_for_processing(invocation_order, declaration_order):
 
 class Context(object):
     """The context is a special internal object that holds state relevant
-    for the script execution at every single level.  It's normally invisible
-    to commands unless they opt-in to getting access to it.
-
-    The context is useful as it can pass internal objects around and can
-    control special execution features such as reading data from
-    environment variables.
-
-    A context can be used as context manager in which case it will call
-    :meth:`close` on teardown.
-
-    .. versionadded:: 2.0
-       Added the `resilient_parsing`, `help_option_names`,
-       `token_normalize_func` parameters.
-
-    .. versionadded:: 3.0
-       Added the `allow_extra_args` and `allow_interspersed_args`
-       parameters.
-
-    .. versionadded:: 4.0
-       Added the `color`, `ignore_unknown_options`, and
-       `max_content_width` parameters.
 
     :param command: the command class for this context.
     :param parent: the parent context.
@@ -451,13 +430,6 @@ class Command(BaseCommand):
         self.format_usage(ctx, formatter)
         return formatter.getvalue().rstrip('\n')
 
-    def get_params(self, ctx):
-        rv = self.params
-        help_option = self.get_help_option(ctx)
-        if help_option is not None:
-            rv = rv + [help_option]
-        return rv
-
     def format_usage(self, ctx, formatter):
         """Writes the usage line into the formatter."""
         pieces = self.collect_usage_pieces(ctx)
@@ -471,29 +443,6 @@ class Command(BaseCommand):
         for param in self.get_params(ctx):
             rv.extend(param.get_usage_pieces(ctx))
         return rv
-
-    def get_help_option_names(self, ctx):
-        """Returns the names for the help option."""
-        all_names = set(ctx.help_option_names)
-        for param in self.params:
-            all_names.difference_update(param.opts)
-            all_names.difference_update(param.secondary_opts)
-        return all_names
-
-    def get_help_option(self, ctx):
-        """Returns the help option object."""
-        help_options = self.get_help_option_names(ctx)
-        if not help_options:
-            return
-
-        def show_help(ctx, param, value):
-            if value and not ctx.resilient_parsing:
-                echo(ctx.get_help(), color=ctx.color)
-                ctx.exit()
-        return Option(help_options, is_flag=True,
-                      is_eager=True, expose_value=False,
-                      callback=show_help,
-                      help='Show this message and exit.')
 
     def get_help(self, ctx):
         """Formats the help into a string and returns it.  This creates a
@@ -987,35 +936,6 @@ class Parameter(object):
 
 
 class Option(Parameter):
-
-    def add_to_parser(self, parser, ctx):
-        kwargs = {
-            'dest': self.name,
-            'nargs': self.nargs,
-            'obj': self,
-        }
-
-        if self.multiple:
-            action = 'append'
-        elif self.count:
-            action = 'count'
-        else:
-            action = 'store'
-
-        if self.is_flag:
-            kwargs.pop('nargs', None)
-            if self.is_bool_flag and self.secondary_opts:
-                parser.add_option(self.opts, action=action + '_const',
-                                  const=True, **kwargs)
-                parser.add_option(self.secondary_opts, action=action +
-                                  '_const', const=False, **kwargs)
-            else:
-                parser.add_option(self.opts, action=action + '_const',
-                                  const=self.flag_value,
-                                  **kwargs)
-        else:
-            kwargs['action'] = action
-            parser.add_option(self.opts, **kwargs)
 
     def get_help_record(self, ctx):
         any_prefix_is_slash = []
