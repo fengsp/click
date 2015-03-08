@@ -10,50 +10,6 @@ from .exceptions import Abort, UsageError
 from .types import convert_type
 
 
-def confirm(text, default=False, abort=False, prompt_suffix=': ',
-            show_default=True, err=False):
-    """Prompts for confirmation (yes/no question).
-
-    If the user aborts the input by sending a interrupt signal this
-    function will catch it and raise a :exc:`Abort` exception.
-
-    .. versionadded:: 4.0
-       Added the `err` parameter.
-
-    :param text: the question to ask.
-    :param default: the default for the prompt.
-    :param abort: if this is set to `True` a negative answer aborts the
-                  exception by raising :exc:`Abort`.
-    :param prompt_suffix: a suffix that should be added to the prompt.
-    :param show_default: shows or hides the default value in the prompt.
-    :param err: if set to true the file defaults to ``stderr`` instead of
-                ``stdout``, the same as with echo.
-    """
-    prompt = _build_prompt(text, prompt_suffix, show_default,
-                           default and 'Y/n' or 'y/N')
-    while 1:
-        try:
-            # Write the prompt separately so that we get nice
-            # coloring through colorama on Windows
-            echo(prompt, nl=False, err=err)
-            value = visible_prompt_func('').lower().strip()
-        except (KeyboardInterrupt, EOFError):
-            raise Abort()
-        if value in ('y', 'yes'):
-            rv = True
-        elif value in ('n', 'no'):
-            rv = False
-        elif value == '':
-            rv = default
-        else:
-            echo('Error: invalid input', err=err)
-            continue
-        break
-    if abort and not rv:
-        raise Abort()
-    return rv
-
-
 def get_terminal_size():
     """Returns the current size of the terminal as tuple in the form
     ``(width, height)`` in columns and rows.
