@@ -10,23 +10,6 @@ from .exceptions import Abort, UsageError
 from .types import convert_type
 
 
-def echo_via_pager(text, color=None):
-    """This function takes a text and shows it via an environment specific
-    pager on stdout.
-
-    .. versionchanged:: 3.0
-       Added the `color` flag.
-
-    :param text: the text to page.
-    :param color: controls if the pager supports ANSI colors or not.  The
-                  default is autodetection.
-    """
-    if not isinstance(text, string_types):
-        text = text_type(text)
-    from ._termui_impl import pager
-    return pager(text + '\n', color)
-
-
 def progressbar(iterable=None, length=None, label=None, show_eta=True,
                 show_percent=None, show_pos=False,
                 item_show_func=None, fill_char='#', empty_char='-',
