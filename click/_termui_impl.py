@@ -19,53 +19,7 @@ from .utils import echo
 from .exceptions import ClickException
 
 
-if os.name == 'nt':
-    BEFORE_BAR = '\r'
-    AFTER_BAR = '\n'
-else:
-    BEFORE_BAR = '\r\033[?25l'
-    AFTER_BAR = '\033[?25h\n'
-
-
 class Editor(object):
-
-    def __init__(self, editor=None, env=None, require_save=True,
-                 extension='.txt'):
-        self.editor = editor
-        self.env = env
-        self.require_save = require_save
-        self.extension = extension
-
-    def get_editor(self):
-        if self.editor is not None:
-            return self.editor
-        for key in 'VISUAL', 'EDITOR':
-            rv = os.environ.get(key)
-            if rv:
-                return rv
-        if WIN:
-            return 'notepad'
-        for editor in 'vim', 'nano':
-            if os.system('which %s >/dev/null 2>&1' % editor) == 0:
-                return editor
-        return 'vi'
-
-    def edit_file(self, filename):
-        import subprocess
-        editor = self.get_editor()
-        if self.env:
-            environ = os.environ.copy()
-            environ.update(self.env)
-        else:
-            environ = None
-        try:
-            c = subprocess.Popen('%s "%s"' % (editor, filename),
-                                 env=environ, shell=True)
-            exit_code = c.wait()
-            if exit_code != 0:
-                raise ClickException('%s: Editing failed!' % editor)
-        except OSError as e:
-            raise ClickException('%s: Editing failed: %s' % (editor, e))
 
     def edit(self, text):
         import tempfile

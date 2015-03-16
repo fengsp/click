@@ -10,54 +10,6 @@ from .exceptions import Abort, UsageError
 from .types import convert_type
 
 
-def unstyle(text):
-    """Removes ANSI styling information from a string.  Usually it's not
-    necessary to use this function as Click's echo function will
-    automatically remove styling if necessary.
-
-    .. versionadded:: 2.0
-
-    :param text: the text to remove style information from.
-    """
-    return strip_ansi(text)
-
-
-def edit(text=None, editor=None, env=None, require_save=True,
-         extension='.txt', filename=None):
-    r"""Edits the given text in the defined editor.  If an editor is given
-    (should be the full path to the executable but the regular operating
-    system search path is used for finding the executable) it overrides
-    the detected editor.  Optionally, some environment variables can be
-    used.  If the editor is closed without changes, `None` is returned.  In
-    case a file is edited directly the return value is always `None` and
-    `require_save` and `extension` are ignored.
-
-    If the editor cannot be opened a :exc:`UsageError` is raised.
-
-    Note for Windows: to simplify cross-platform usage, the newlines are
-    automatically converted from POSIX to Windows and vice versa.  As such,
-    the message here will have ``\n`` as newline markers.
-
-    :param text: the text to edit.
-    :param editor: optionally the editor to use.  Defaults to automatic
-                   detection.
-    :param env: environment variables to forward to the editor.
-    :param require_save: if this is true, then not saving in the editor
-                         will make the return value become `None`.
-    :param extension: the extension to tell the editor about.  This defaults
-                      to `.txt` but changing this might change syntax
-                      highlighting.
-    :param filename: if provided it will edit this file instead of the
-                     provided text contents.  It will not use a temporary
-                     file as an indirection in that case.
-    """
-    from ._termui_impl import Editor
-    editor = Editor(editor=editor, env=env, require_save=require_save,
-                    extension=extension)
-    if filename is None:
-        return editor.edit(text)
-    editor.edit_file(filename)
-
 
 def launch(url, wait=False, locate=False):
     """This function launches the given URL (or filename) in the default
