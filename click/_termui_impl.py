@@ -19,45 +19,6 @@ from .utils import echo
 from .exceptions import ClickException
 
 
-class Editor(object):
-
-    def edit(self, text):
-        import tempfile
-
-        text = text or ''
-        if text and not text.endswith('\n'):
-            text += '\n'
-
-        fd, name = tempfile.mkstemp(prefix='editor-', suffix=self.extension)
-        try:
-            if WIN:
-                encoding = 'utf-8-sig'
-                text = text.replace('\n', '\r\n')
-            else:
-                encoding = 'utf-8'
-            text = text.encode(encoding)
-
-            f = os.fdopen(fd, 'wb')
-            f.write(text)
-            f.close()
-            timestamp = os.path.getmtime(name)
-
-            self.edit_file(name)
-
-            if self.require_save \
-               and os.path.getmtime(name) == timestamp:
-                return None
-
-            f = open(name, 'rb')
-            try:
-                rv = f.read()
-            finally:
-                f.close()
-            return rv.decode('utf-8-sig').replace('\r\n', '\n')
-        finally:
-            os.unlink(name)
-
-
 def open_url(url, wait=False, locate=False):
     import subprocess
 
