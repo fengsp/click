@@ -295,11 +295,6 @@ class Context(object):
                                    _set_invoked_subcommands)
     del _get_invoked_subcommands, _set_invoked_subcommands
 
-    def make_formatter(self):
-        """Creates the formatter for the help and usage output."""
-        return HelpFormatter(width=self.terminal_width,
-                             max_width=self.max_content_width)
-
     def call_on_close(self, f):
         """This decorator remembers a function as callback that should be
         executed when the context tears down.  This is most useful to bind
@@ -434,15 +429,6 @@ class Command(BaseCommand):
         """Writes the usage line into the formatter."""
         pieces = self.collect_usage_pieces(ctx)
         formatter.write_usage(ctx.command_path, ' '.join(pieces))
-
-    def collect_usage_pieces(self, ctx):
-        """Returns all the pieces that go into the usage line and returns
-        it as a list of strings.
-        """
-        rv = [self.options_metavar]
-        for param in self.get_params(ctx):
-            rv.extend(param.get_usage_pieces(ctx))
-        return rv
 
     def get_help(self, ctx):
         """Formats the help into a string and returns it.  This creates a
@@ -931,9 +917,6 @@ class Parameter(object):
     def get_help_record(self, ctx):
         pass
 
-    def get_usage_pieces(self, ctx):
-        return []
-
 
 class Option(Parameter):
 
@@ -1041,16 +1024,6 @@ class Argument(Parameter):
                 required = attrs.get('nargs', 1) > 0
         Parameter.__init__(self, param_decls, required=required, **attrs)
 
-    def make_metavar(self):
-        if self.metavar is not None:
-            return self.metavar
-        var = self.name.upper()
-        if not self.required:
-            var = '[%s]' % var
-        if self.nargs != 1:
-            var += '...'
-        return var
-
     def _parse_decls(self, decls, expose_value):
         if not decls:
             if not expose_value:
@@ -1065,9 +1038,6 @@ class Argument(Parameter):
             raise TypeError('Arguments take exactly one or two '
                             'parameter declarations, got %d' % len(decls))
         return name, [arg], []
-
-    def get_usage_pieces(self, ctx):
-        return [self.make_metavar()]
 
     def add_to_parser(self, parser, ctx):
         parser.add_argument(dest=self.name, nargs=self.nargs,

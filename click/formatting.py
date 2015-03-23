@@ -83,26 +83,6 @@ def wrap_text(text, width=78, initial_indent='', subsequent_indent='',
 
 
 class HelpFormatter(object):
-    """This class helps with formatting text-based help pages.  It's
-    usually just needed for very special internal cases, but it's also
-    exposed so that developers can write their own fancy outputs.
-
-    At present, it always writes into memory.
-
-    :param indent_increment: the additional increment for each level.
-    :param width: the width for the text.  This defaults to the terminal
-                  width clamped to a maximum of 78.
-    """
-
-    def __init__(self, indent_increment=2, width=None, max_width=None):
-        self.indent_increment = indent_increment
-        if max_width is None:
-            max_width = 80
-        if width is None:
-            width = max(min(get_terminal_size()[0], max_width) - 2, 50)
-        self.width = width
-        self.current_indent = 0
-        self.buffer = []
 
     def write(self, string):
         """Writes a unicode string into the internal buffer."""
