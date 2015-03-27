@@ -420,46 +420,6 @@ class BaseCommand(object):
 
 class Command(BaseCommand):
 
-    def get_usage(self, ctx):
-        formatter = ctx.make_formatter()
-        self.format_usage(ctx, formatter)
-        return formatter.getvalue().rstrip('\n')
-
-    def format_usage(self, ctx, formatter):
-        """Writes the usage line into the formatter."""
-        pieces = self.collect_usage_pieces(ctx)
-        formatter.write_usage(ctx.command_path, ' '.join(pieces))
-
-    def get_help(self, ctx):
-        """Formats the help into a string and returns it.  This creates a
-        formatter and will call into the following formatting methods:
-        """
-        formatter = ctx.make_formatter()
-        self.format_help(ctx, formatter)
-        return formatter.getvalue().rstrip('\n')
-
-    def format_help(self, ctx, formatter):
-        """Writes the help into the formatter if it exists.
-
-        This calls into the following methods:
-
-        -   :meth:`format_usage`
-        -   :meth:`format_help_text`
-        -   :meth:`format_options`
-        -   :meth:`format_epilog`
-        """
-        self.format_usage(ctx, formatter)
-        self.format_help_text(ctx, formatter)
-        self.format_options(ctx, formatter)
-        self.format_epilog(ctx, formatter)
-
-    def format_help_text(self, ctx, formatter):
-        """Writes the help text to the formatter if it exists."""
-        if self.help:
-            formatter.write_paragraph()
-            with formatter.indentation():
-                formatter.write_text(self.help)
-
     def format_options(self, ctx, formatter):
         """Writes all the options into the formatter if they exist."""
         opts = []

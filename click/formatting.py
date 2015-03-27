@@ -24,23 +24,6 @@ class HelpFormatter(object):
         """Writes a heading into the buffer."""
         self.write('%*s%s:\n' % (self.current_indent, '', heading))
 
-    def write_paragraph(self):
-        """Writes a paragraph into the buffer."""
-        if self.buffer:
-            self.write('\n')
-
-    def write_text(self, text):
-        """Writes re-indented text into the buffer.  This rewraps and
-        preserves paragraphs.
-        """
-        text_width = max(self.width - self.current_indent, 11)
-        indent = ' ' * self.current_indent
-        self.write(wrap_text(text, text_width,
-                             initial_indent=indent,
-                             subsequent_indent=indent,
-                             preserve_paragraphs=True))
-        self.write('\n')
-
     def write_dl(self, rows, col_max=30, col_spacing=2):
         """Writes a definition list into the buffer.  This is how options
         and commands are usually formatted.
@@ -92,19 +75,6 @@ class HelpFormatter(object):
             yield
         finally:
             self.dedent()
-
-    @contextmanager
-    def indentation(self):
-        """A context manager that increases the indentation."""
-        self.indent()
-        try:
-            yield
-        finally:
-            self.dedent()
-
-    def getvalue(self):
-        """Returns the buffer contents."""
-        return ''.join(self.buffer)
 
 
 def join_options(options):
