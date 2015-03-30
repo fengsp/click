@@ -409,13 +409,6 @@ class Command(BaseCommand):
             with formatter.section('Options'):
                 formatter.write_dl(opts)
 
-    def format_epilog(self, ctx, formatter):
-        """Writes the epilog into the formatter if it exists."""
-        if self.epilog:
-            formatter.write_paragraph()
-            with formatter.indentation():
-                formatter.write_text(self.epilog)
-
     def parse_args(self, ctx, args):
         parser = self.make_parser(ctx)
         opts, args, param_order = parser.parse_args(args=args)
