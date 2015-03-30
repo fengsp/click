@@ -395,29 +395,6 @@ class Context(object):
         return self.invoke(cmd, **kwargs)
 
 
-class BaseCommand(object):
-    #: the default for the :attr:`Context.allow_extra_args` flag.
-    allow_extra_args = False
-    #: the default for the :attr:`Context.allow_interspersed_args` flag.
-    allow_interspersed_args = True
-    #: the default for the :attr:`Context.ignore_unknown_options` flag.
-    ignore_unknown_options = False
-
-    def main(self, args=None, prog_name=None, complete_var=None,
-             standalone_mode=True, **extra):
-        """This is the way to invoke a script with all the bells and
-
-        :param complete_var: the environment variable that controls the
-                             bash completion support.  The default is
-                             ``"_<prog_name>_COMPLETE"`` with prog name in
-                             uppercase.
-        """
-        # Hook for the Bash completion.  This only activates if the Bash
-        # completion is actually enabled, otherwise this is quite a fast
-        # noop.
-        _bashcomplete(self, prog_name, complete_var)
-
-
 class Command(BaseCommand):
 
     def format_options(self, ctx, formatter):
