@@ -844,40 +844,8 @@ class Parameter(object):
             ctx.params[self.name] = value
         return value, args
 
-    def get_help_record(self, ctx):
-        pass
-
 
 class Option(Parameter):
-
-    def get_help_record(self, ctx):
-        any_prefix_is_slash = []
-
-        def _write_opts(opts):
-            rv, any_slashes = join_options(opts)
-            if any_slashes:
-                any_prefix_is_slash[:] = [True]
-            if not self.is_flag and not self.count:
-                rv += ' ' + self.make_metavar()
-            return rv
-
-        rv = [_write_opts(self.opts)]
-        if self.secondary_opts:
-            rv.append(_write_opts(self.secondary_opts))
-
-        help = self.help or ''
-        extra = []
-        if self.default is not None and self.show_default:
-            extra.append('default: %s' % (
-                         ', '.join('%s' % d for d in self.default)
-                         if isinstance(self.default, (list, tuple))
-                         else self.default, ))
-        if self.required:
-            extra.append('required')
-        if extra:
-            help = '%s[%s]' % (help and help + '  ' or '', '; '.join(extra))
-
-        return ((any_prefix_is_slash and '; ' or ' / ').join(rv), help)
 
     def get_default(self, ctx):
         # If we're a non boolean flag out default is more complex because
