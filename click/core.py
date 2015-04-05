@@ -397,18 +397,6 @@ class Context(object):
 
 class Command(BaseCommand):
 
-    def format_options(self, ctx, formatter):
-        """Writes all the options into the formatter if they exist."""
-        opts = []
-        for param in self.get_params(ctx):
-            rv = param.get_help_record(ctx)
-            if rv is not None:
-                opts.append(rv)
-
-        if opts:
-            with formatter.section('Options'):
-                formatter.write_dl(opts)
-
     def parse_args(self, ctx, args):
         parser = self.make_parser(ctx)
         opts, args, param_order = parser.parse_args(args=args)

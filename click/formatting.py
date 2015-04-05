@@ -19,11 +19,6 @@ def iter_rows(rows, col_count):
 
 
 class HelpFormatter(object):
-
-    def write_heading(self, heading):
-        """Writes a heading into the buffer."""
-        self.write('%*s%s:\n' % (self.current_indent, '', heading))
-
     def write_dl(self, rows, col_max=30, col_spacing=2):
         """Writes a definition list into the buffer.  This is how options
         and commands are usually formatted.
@@ -60,21 +55,6 @@ class HelpFormatter(object):
                         first_col + self.current_indent, '', line))
             else:
                 self.write('\n')
-
-    @contextmanager
-    def section(self, name):
-        """Helpful context manager that writes a paragraph, a heading,
-        and the indents.
-
-        :param name: the section name that is written as heading.
-        """
-        self.write_paragraph()
-        self.write_heading(name)
-        self.indent()
-        try:
-            yield
-        finally:
-            self.dedent()
 
 
 def join_options(options):
