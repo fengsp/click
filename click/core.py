@@ -72,21 +72,6 @@ def augment_usage_errors(ctx, param=None):
         raise
 
 
-def iter_params_for_processing(invocation_order, declaration_order):
-    """Given a sequence of parameters in the order as should be considered
-    for processing and an iterable of parameters that exist, this returns
-    a list in the correct order as they should be processed.
-    """
-    def sort_key(item):
-        try:
-            idx = invocation_order.index(item)
-        except ValueError:
-            idx = float('inf')
-        return (not item.is_eager, idx)
-
-    return sorted(declaration_order, key=sort_key)
-
-
 class Context(object):
     """The context is a special internal object that holds state relevant
 
@@ -393,25 +378,6 @@ class Context(object):
                 kwargs[param] = self.params[param]
 
         return self.invoke(cmd, **kwargs)
-
-
-class Command(BaseCommand):
-
-    def parse_args(self, ctx, args):
-        parser = self.make_parser(ctx)
-        opts, args, param_order = parser.parse_args(args=args)
-
-        for param in iter_params_for_processing(
-                param_order, self.get_params(ctx)):
-            value, args = param.handle_parse_result(ctx, opts, args)
-
-        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
-            ctx.fail('Got unexpected extra argument%s (%s)'
-                     % (len(args) != 1 and 's' or '',
-                        ' '.join(map(make_str, args))))
-
-        ctx.args = args
-        return args
 
 
 class MultiCommand(Command):
@@ -736,52 +702,12 @@ class Parameter(object):
             rv = self.default
         return self.type_cast_value(ctx, rv)
 
-    def consume_value(self, ctx, opts):
-        value = opts.get(self.name)
-        if value is None:
-            value = ctx.lookup_default(self.name)
-        if value is None:
-            value = self.value_from_envvar(ctx)
-        return value
-
-    def type_cast_value(self, ctx, value):
-        """Given a value this runs it properly through the type system.
-        This automatically handles things like `nargs` and `multiple`.
-        """
-        def _convert(value, level):
-            if level == 0:
-                return self.type(value, self, ctx)
-            return tuple(_convert(x, level - 1) for x in value or ())
-        return _convert(value, (self.nargs != 1) + bool(self.multiple))
-
-    def process_value(self, ctx, value):
-        """Given a value and context this runs the logic to convert the
-        value as necessary.
-        """
-        # If the value we were given is None we do nothing.  This way
-        # code that calls this can easily figure out if something was
-        # not provided.  Otherwise it would be converted into an empty
-        # tuple for multiple invocations which is inconvenient.
-        if value is not None:
-            return self.type_cast_value(ctx, value)
-
     def value_is_missing(self, value):
         if value is None:
             return True
         if (self.nargs != 1 or self.multiple) and value == ():
             return True
         return False
-
-    def full_process_value(self, ctx, value):
-        value = self.process_value(ctx, value)
-
-        if value is None:
-            value = self.get_default(ctx)
-
-        if self.required and self.value_is_missing(value):
-            ctx.fail(self.get_missing_message(ctx))
-
-        return value
 
     def get_missing_message(self, ctx):
         rv = 'Missing %s %s.' % (
@@ -810,27 +736,6 @@ class Parameter(object):
         if rv is not None and self.nargs != 1:
             rv = self.type.split_envvar_value(rv)
         return rv
-
-    def handle_parse_result(self, ctx, opts, args):
-        with augment_usage_errors(ctx, param=self):
-            value = self.consume_value(ctx, opts)
-            try:
-                value = self.full_process_value(ctx, value)
-            except Exception:
-                if not ctx.resilient_parsing:
-                    raise
-                value = None
-            if self.callback is not None:
-                try:
-                    value = invoke_param_callback(
-                        self.callback, ctx, self, value)
-                except Exception:
-                    if not ctx.resilient_parsing:
-                        raise
-
-        if self.expose_value:
-            ctx.params[self.name] = value
-        return value, args
 
 
 class Option(Parameter):
